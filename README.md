@@ -109,4 +109,4 @@ Add this to your .gitignore so the key is never pushed:
 
 ---
 
-*Built by (G Surya Prakash)[https://github.com/GSuryaP/] for PromptWars · Hack2Skill · 2026*
+*Built by [G Surya Prakash](https://github.com/GSuryaP/) for PromptWars · Hack2Skill · 2026*
