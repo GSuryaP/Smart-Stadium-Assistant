@@ -1,20 +1,20 @@
-# 🏟 AI Event Assistant
+# AI Event Assistant
 > **PromptWars — Physical Event Experience Challenge**  
 > Built for Hack2Skill · Virtual PromptWars · Powered by Google Gemini
 
 ---
 
-## 🎯 Problem Statement
+## Problem Statement
 Design a solution that improves the physical event experience for attendees at large-scale sporting venues. The system should address challenges such as **crowd movement**, **waiting times**, and **real-time coordination**, while ensuring a seamless and enjoyable experience.
 
 ---
 
-## 💡 Solution
+## Solution
 An AI-powered stadium assistant combining a live D3.js crowd simulation with a Google Gemini-backed chat. The system reads real-time crowd density and answers attendee questions intelligently — with the API key stored securely on the server.
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 ```
 Browser (frontend/index.html)
@@ -41,7 +41,7 @@ Browser displays answer in chat
 
 ---
 
-## 🚀 How to Run
+## How to Run
 
 ### Step 1 — Get a free Gemini API key
 Go to https://aistudio.google.com/app/apikey, sign in, and create an API key.
@@ -68,7 +68,7 @@ http://localhost:8000
 
 ---
 
-## 🗂 Project Structure
+## Project Structure
 
 ```
 AI-Event-Assistant/
@@ -89,7 +89,7 @@ Add this to your .gitignore so the key is never pushed:
 
 ---
 
-## ✨ Features
+## Features
 
 - Live D3.js stadium with 6 crowd zones, color-coded by density
 - Google Gemini 2.0 Flash answers questions grounded in live crowd data
@@ -101,7 +101,7 @@ Add this to your .gitignore so the key is never pushed:
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - Frontend: HTML5, CSS3, Vanilla JS, D3.js v7
 - Backend: Python, Flask, Flask-CORS, python-dotenv
@@ -109,4 +109,4 @@ Add this to your .gitignore so the key is never pushed:
 
 ---
 
-*Built for PromptWars · Hack2Skill · 2025*
+*Built by (G Surya Prakash)[https://github.com/GSuryaP/] for PromptWars · Hack2Skill · 2026*
