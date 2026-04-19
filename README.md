@@ -1,6 +1,6 @@
 # AI Event Assistant
 > **PromptWars — Physical Event Experience Challenge**  
-> Built for Hack2Skill · Virtual PromptWars · Powered by Google Gemini
+> Built for Hack2Skill · Virtual PromptWars 
 
 ---
 
@@ -58,7 +58,7 @@ pip install -r requirements.txt
 
 ### Step 4 — Start the server
 ```
-python app.py
+python3 app.py
 ```
 
 ### Step 5 — Open in browser
@@ -96,8 +96,16 @@ Add this to your .gitignore so the key is never pushed:
 - API key secured on server — never sent to the browser
 - Local rule engine for instant answers (gates, food, exits, wait times)
 - Live stats: attendance, busiest gate, best entry, zone bars
-- Dark / light mode with localStorage persistence
+- Dark/light mode with localStorage persistence
 - Simulation speed controls (1x, 3x, 10x) and pause/resume
+
+---
+
+## Implementation Screenshots
+
+![alt text](assets/image.png)
+![alt text](assets/image-1.png)
+![alt text](assets/image-2.png)
 
 ---
 
