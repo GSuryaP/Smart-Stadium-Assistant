@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Event Assistant</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    :root {
+      --bg-page:            #f0f2f5;
+      --bg-app:             #ffffff;
+      --bg-chat:            #f8f8fc;
+      --bg-input:           #f4f4fb;
+      --bg-header:          #ffffff;
+      --bg-bot-bubble:      #ffffff;
+      --text-primary:       #1a1a2e;
+      --text-secondary:     #6b6b8a;
+      --border-main:        #ebebeb;
+      --border-input:       #dddde8;
+      --border-bot:         #e8e8f0;
+      --sidebar-bg:         #1a1a2e;
+      --sidebar-title:      #7c7fa6;
+      --sidebar-gate-bg:    #252545;
+      --sidebar-gate-name:  #e0e0f0;
+      --sidebar-qbtn-bg:    #252545;
+      --sidebar-qbtn-color: #c8c8e8;
+      --sidebar-qbtn-border:#2e2e52;
+      --sidebar-qbtn-hover: #2e2e5e;
+      --sidebar-qbtn-hbrd:  #4a4a88;
+      --accent:             #4a4aaa;
+      --accent-hover:       #3a3a99;
+      --scrollbar:          #d0d0e0;
+      --toggle-bg:          #e0e0f0;
+      --toggle-knob:        #ffffff;
+      --panel-bg:           #f0f2f5;
+      --panel-border:       #e0e0f0;
+      --stat-label:         #6b6b8a;
+    }
+    [data-theme="dark"] {
+      --bg-page:            #0e0e1a;
+      --bg-app:             #16162a;
+      --bg-chat:            #12121f;
+      --bg-input:           #1e1e36;
+      --bg-header:          #16162a;
+      --bg-bot-bubble:      #1e1e36;
+      --text-primary:       #e8e8ff;
+      --text-secondary:     #8888aa;
+      --border-main:        #2a2a44;
+      --border-input:       #2e2e52;
+      --border-bot:         #2a2a44;
+      --sidebar-bg:         #0f0f20;
+      --sidebar-title:      #6060a0;
+      --sidebar-gate-bg:    #1a1a30;
+      --sidebar-gate-name:  #d0d0f0;
+      --sidebar-qbtn-bg:    #1a1a30;
+      --sidebar-qbtn-color: #a0a0d0;
+      --sidebar-qbtn-border:#2a2a48;
+      --sidebar-qbtn-hover: #222240;
+      --sidebar-qbtn-hbrd:  #4040a0;
+      --accent:             #6666cc;
+      --accent-hover:       #5555bb;
+      --scrollbar:          #2e2e50;
+      --toggle-bg:          #3a3a6a;
+      --toggle-knob:        #e0e0ff;
+      --panel-bg:           #1a1a30;
+      --panel-border:       #2a2a44;
+      --stat-label:         #8888aa;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg-page);
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; padding: 20px 16px; gap: 14px;
+      transition: background 0.3s;
+    }
+
+    .app {
+      display: flex; width: 980px; height: 560px;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+      background: var(--bg-app); transition: background 0.3s;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 210px; flex-shrink: 0; background: var(--sidebar-bg);
+      padding: 18px 13px; display: flex; flex-direction: column;
+      gap: 18px; overflow-y: auto; transition: background 0.3s;
+    }
+    .sidebar-top { display: flex; align-items: center; justify-content: space-between; }
+    .app-brand { font-size: 11px; font-weight: 700; color: #5a5a9a; letter-spacing: 0.06em; text-transform: uppercase; }
+    .toggle-wrap { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .toggle-track { width: 34px; height: 18px; border-radius: 18px; background: var(--toggle-bg); position: relative; transition: background 0.25s; }
+    .toggle-knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--toggle-knob); transition: transform 0.25s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    [data-theme="dark"] .toggle-knob { transform: translateX(16px); }
+    .toggle-label { font-size: 10px; color: var(--sidebar-title); user-select: none; }
+    .sidebar-section-title { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; color: var(--sidebar-title); text-transform: uppercase; margin-bottom: 7px; }
+    .gate-list { display: flex; flex-direction: column; gap: 6px; }
+    .gate-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 9px; background: var(--sidebar-gate-bg); transition: background 0.3s; }
+    .gate-name { font-size: 12px; font-weight: 600; color: var(--sidebar-gate-name); }
+    .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .badge-red    { background: #3d1515; color: #ff7070; }
+    .badge-yellow { background: #3a2e10; color: #ffca50; }
+    .badge-green  { background: #0f2e1a; color: #52e08a; }
+    .crowd-stats { display: flex; flex-direction: column; gap: 5px; }
+    .crowd-stat-row { display: flex; align-items: center; font-size: 11px; color: var(--sidebar-gate-name); gap: 6px; }
+    .crowd-bar-wrap { flex: 1; height: 5px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .crowd-bar { height: 100%; border-radius: 4px; transition: width 0.6s; }
+    .quick-btns { display: flex; flex-direction: column; gap: 6px; }
+    .qbtn { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--sidebar-qbtn-border); background: var(--sidebar-qbtn-bg); color: var(--sidebar-qbtn-color); font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; text-align: left; }
+    .qbtn:hover { background: var(--sidebar-qbtn-hover); border-color: var(--sidebar-qbtn-hbrd); color: #ffffff; }
+    .qbtn-icon { font-size: 13px; flex-shrink: 0; }
+
+    /* ── Chat ── */
+    .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--bg-app); transition: background 0.3s; min-width: 0; }
+    .chat-header { padding: 14px 20px; border-bottom: 1px solid var(--border-main); background: var(--bg-header); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; transition: background 0.3s, border-color 0.3s; }
+    .chat-header-text h2 { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .chat-header-text p  { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #51d88a; box-shadow: 0 0 0 3px rgba(81,216,138,0.2); }
+    .chat-box { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-chat); transition: background 0.3s; }
+    .chat-box::-webkit-scrollbar { width: 4px; }
+    .chat-box::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
+    .msg { display: flex; flex-direction: column; max-width: 75%; gap: 3px; }
+    .msg.user { align-self: flex-end; align-items: flex-end; }
+    .msg.bot  { align-self: flex-start; align-items: flex-start; }
+    .bubble { padding: 9px 13px; border-radius: 15px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; transition: background 0.3s, color 0.3s; }
+    .msg.user .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.bot  .bubble { background: var(--bg-bot-bubble); color: var(--text-primary); border: 1px solid var(--border-bot); border-bottom-left-radius: 4px; }
+    .msg-time { font-size: 10px; color: var(--text-secondary); }
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--text-secondary); }
+    .empty-icon { font-size: 30px; opacity: 0.4; }
+    .empty-text { font-size: 12px; }
+    .input-row { padding: 11px 16px; border-top: 1px solid var(--border-main); display: flex; gap: 8px; align-items: center; background: var(--bg-header); flex-shrink: 0; transition: background 0.3s, border-color 0.3s; }
+    .input-row input { flex: 1; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border-input); background: var(--bg-input); color: var(--text-primary); font-size: 13px; outline: none; transition: border-color 0.15s, background 0.15s, color 0.3s; }
+    .input-row input::placeholder { color: var(--text-secondary); }
+    .input-row input:focus { border-color: var(--accent); background: var(--bg-app); }
+    .send-btn { padding: 9px 18px; border-radius: 9px; border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0; transition: background 0.15s, transform 0.1s; }
+    .send-btn:hover  { background: var(--accent-hover); }
+    .send-btn:active { transform: scale(0.97); }
+
+    /* ── Stadium panel ── */
+    .stadium-panel { width: 980px; background: var(--bg-app); border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); overflow: hidden; transition: background 0.3s; }
+    .stadium-header { padding: 11px 18px; border-bottom: 1px solid var(--border-main); display: flex; align-items: center; justify-content: space-between; transition: border-color 0.3s; }
+    .stadium-title { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+    .stadium-subtitle { font-size: 11px; color: var(--text-secondary); margin-left: 10px; }
+    .sim-controls { display: flex; align-items: center; gap: 8px; }
+    .sim-speed-label { font-size: 11px; color: var(--text-secondary); }
+    .sim-btn { padding: 4px 12px; border-radius: 7px; border: 1px solid var(--border-input); background: var(--bg-input); color: var(--text-primary); font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .sim-btn:hover, .sim-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .stadium-body { display: flex; align-items: flex-start; }
+    #stadium-svg { flex-shrink: 0; display: block; }
+    .legend-panel { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .legend-title { font-size: 10px; font-weight: 700; color: var(--stat-label); text-transform: uppercase; letter-spacing: 0.08em; }
+    .legend-items { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text-primary); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 5px; }
+    .stat-card { background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 8px; padding: 7px 10px; transition: background 0.3s, border-color 0.3s; }
+    .stat-card-label { font-size: 9px; color: var(--stat-label); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-card-value { font-size: 17px; font-weight: 700; color: var(--text-primary); margin-top: 1px; }
+    .stat-card-sub { font-size: 10px; color: var(--text-secondary); }
+    .zone-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 5px; }
+    .zone-bar-row { display: flex; flex-direction: column; gap: 2px; }
+    .zone-bar-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-primary); }
+    .zone-bar-track { height: 6px; background: var(--panel-bg); border-radius: 4px; overflow: hidden; border: 1px solid var(--panel-border); }
+    .zone-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  </style>
+</head>
+<body>
+
+<!-- Main app -->
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-top">
+      <span class="app-brand">Event AI</span>
+      <div class="toggle-wrap" id="theme-toggle">
+        <div class="toggle-track"><div class="toggle-knob"></div></div>
+        <span class="toggle-label" id="toggle-label">Light</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Stadium status</div>
+      <div class="gate-list">
+        <div class="gate-item"><span class="gate-name">Gate A</span><span class="badge badge-red"    id="badge-A">High</span></div>
+        <div class="gate-item"><span class="gate-name">Gate B</span><span class="badge badge-yellow" id="badge-B">Medium</span></div>
+        <div class="gate-item"><span class="gate-name">Gate C</span><span class="badge badge-green"  id="badge-C">Low</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Live crowd</div>
+      <div class="crowd-stats">
+        <div class="crowd-stat-row"><span>Gate A</span><div class="crowd-bar-wrap"><div class="crowd-bar" id="crowd-bar-A" style="background:#ff7070;width:85%"></div></div><span id="crowd-pct-A">85%</span></div>
+        <div class="crowd-stat-row"><span>Gate B</span><div class="crowd-bar-wrap"><div class="crowd-bar" id="crowd-bar-B" style="background:#ffca50;width:52%"></div></div><span id="crowd-pct-B">52%</span></div>
+        <div class="crowd-stat-row"><span>Gate C</span><div class="crowd-bar-wrap"><div class="crowd-bar" id="crowd-bar-C" style="background:#52e08a;width:28%"></div></div><span id="crowd-pct-C">28%</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Quick actions</div>
+      <div class="quick-btns">
+        <button class="qbtn" id="qbtn-gate"><span class="qbtn-icon">&#x1F6AA;</span> Best gate</button>
+        <button class="qbtn" id="qbtn-food"><span class="qbtn-icon">&#x1F354;</span> Food nearby</button>
+        <button class="qbtn" id="qbtn-exit"><span class="qbtn-icon">&#x1F680;</span> Fastest exit</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <div class="chat-header">
+      <div class="chat-header-text">
+        <h2>AI Event Assistant</h2>
+        <p>Powered by Google Gemini &bull; Live stadium data</p>
+      </div>
+      <div class="status-dot"></div>
+    </div>
+    <div class="chat-box" id="chat">
+      <div class="empty-state" id="empty">
+        <div class="empty-icon">&#x1F4AC;</div>
+        <div class="empty-text">No messages yet &mdash; ask something below</div>
+      </div>
+    </div>
+    <div class="input-row">
+      <input type="text" id="question" placeholder="Ask something..."/>
+      <button class="send-btn" id="send-btn">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stadium simulation panel -->
+<div class="stadium-panel">
+  <div class="stadium-header">
+    <div style="display:flex;align-items:center;">
+      <span class="stadium-title">&#x1F3DF; Stadium Simulation</span>
+      <span class="stadium-subtitle" id="sim-status">Live crowd density &bull; updating every 2s</span>
+    </div>
+    <div class="sim-controls">
+      <span class="sim-speed-label">Speed:</span>
+      <button class="sim-btn active" id="speed-1x">1&times;</button>
+      <button class="sim-btn"        id="speed-3x">3&times;</button>
+      <button class="sim-btn"        id="speed-10x">10&times;</button>
+      <button class="sim-btn active" id="pause-btn">&#x23F8; Pause</button>
+    </div>
+  </div>
+  <div class="stadium-body">
+    <svg id="stadium-svg" width="620" height="270"></svg>
+    <div class="legend-panel">
+      <div>
+        <div class="legend-title">Density legend</div>
+        <div class="legend-items">
+          <div class="legend-item"><div class="legend-dot" style="background:#ff4444"></div>High (&gt;70%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ffaa00"></div>Medium (40&ndash;70%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#22cc66"></div>Low (&lt;40%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2d7a2d"></div>Field / Pitch</div>
+        </div>
+      </div>
+      <div>
+        <div class="legend-title">Live stats</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-card-label">Total crowd</div><div class="stat-card-value" id="stat-total">0</div><div class="stat-card-sub">people</div></div>
+          <div class="stat-card"><div class="stat-card-label">Capacity</div><div class="stat-card-value">45k</div><div class="stat-card-sub">max seats</div></div>
+          <div class="stat-card"><div class="stat-card-label">Busiest</div><div class="stat-card-value" id="stat-busiest">&mdash;</div><div class="stat-card-sub" id="stat-busiest-sub">zone</div></div>
+          <div class="stat-card"><div class="stat-card-label">Best entry</div><div class="stat-card-value" id="stat-best">Gate C</div><div class="stat-card-sub">recommended</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="legend-title">Zone occupancy</div>
+        <div class="zone-bars" id="zone-bars"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   HELPERS
+================================================================ */
+function densityColor(d) {
+  return d > 0.70 ? '#ff4444' : d > 0.40 ? '#ffaa00' : '#22cc66';
+}
+function isDark() {
+  return document.documentElement.getAttribute('data-theme') === 'dark';
+}
+
+/* ================================================================
+   THEME
+================================================================ */
+function toggleTheme() {
+  var dark = isDark();
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.getElementById('toggle-label').textContent = dark ? 'Light' : 'Dark';
+  localStorage.setItem('theme', dark ? 'light' : 'dark');
+  buildStadium();
+  updateStats();
+}
+
+(function () {
+  var saved = localStorage.getItem('theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('toggle-label').textContent = 'Dark';
+  }
+})();
+
+/* ================================================================
+   CHAT HELPERS
+================================================================ */
+function nowStr() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function addMessage(msg, type) {
+  var e = document.getElementById('empty');
+  if (e) e.remove();
+  var chat = document.getElementById('chat');
+  var w = document.createElement('div');
+  w.className = 'msg ' + type;
+  w.innerHTML = '<div class="bubble">' + msg + '</div><div class="msg-time">' + nowStr() + '</div>';
+  chat.appendChild(w);
+  chat.scrollTop = chat.scrollHeight;
+  return w;
+}
+
+/* ================================================================
+   STADIUM SNAPSHOT — sent to app.py with every question
+================================================================ */
+function getStadiumSnapshot() {
+  var gd = {
+    A: densityByGate('A'),
+    B: densityByGate('B'),
+    C: densityByGate('C')
+  };
+  var entries   = Object.entries(gd).sort(function(a,b){ return a[1]-b[1]; });
+  var bestGate  = entries[0];
+  var worstGate = entries[entries.length - 1];
+  var avg       = (gd.A + gd.B + gd.C) / 3;
+  var label     = function(d){ return d > 0.70 ? 'high' : d > 0.40 ? 'medium' : 'low'; };
+  var pct       = function(d){ return Math.round(d * 100) + '%'; };
+  return { gd: gd, bestGate: bestGate, worstGate: worstGate, avg: avg,
+           totalPeople: Math.round(avg * 45000), label: label, pct: pct };
+}
+
+/* ================================================================
+   LOCAL RULE ENGINE — instant answers, no server needed
+================================================================ */
+function localAnswer(q) {
+  var s   = getStadiumSnapshot();
+  var low = q.toLowerCase();
+  var gName = function(g){ return 'Gate ' + g; };
+
+  if (/(least|less|low|quiet|empty|best.*gate|gate.*best|which.*gate|recommend.*gate|enter|entry|arrive)/.test(low)) {
+    return 'Best entry right now: ' + gName(s.bestGate[0]) + ' at ' + s.pct(s.bestGate[1]) + ' capacity.\n' +
+      (s.bestGate[1] < 0.40 ? 'Walk straight in with minimal wait.' : 'Short queue, very manageable.') +
+      ' Avoid ' + gName(s.worstGate[0]) + ' (' + s.pct(s.worstGate[1]) + ' — ' + s.label(s.worstGate[1]) + ' crowd).';
+  }
+  if (/(most|busiest|crowded|packed|avoid|worst)/.test(low)) {
+    return gName(s.worstGate[0]) + ' is the most crowded at ' + s.pct(s.worstGate[1]) + '.\n' +
+      'Head to ' + gName(s.bestGate[0]) + ' instead — only ' + s.pct(s.bestGate[1]) + ' full.';
+  }
+  var gMatch = low.match(/gate\s*([abc])/i);
+  if (gMatch) {
+    var g = gMatch[1].toUpperCase();
+    var d = s.gd[g];
+    return 'Gate ' + g + ': ' + s.pct(d) + ' — ' + s.label(d) + ' crowd.\n' +
+      (d > 0.70 ? 'Expect significant queuing.' : d > 0.40 ? 'Moderate wait, manageable.' : 'Smooth entry, very quick.');
+  }
+  if (/(food|eat|concession|snack|drink|hungry|burger|coffee)/.test(low)) {
+    return 'Food stalls near ' + gName(s.bestGate[0]) + ' have the shortest queues (' + s.pct(s.bestGate[1]) + ' crowd).\n' +
+      'Avoid concessions near ' + gName(s.worstGate[0]) + ' — lines will be long there.';
+  }
+  if (/(exit|leave|out|fastest.*way|way.*out|go home)/.test(low)) {
+    return 'Fastest exit: ' + gName(s.bestGate[0]) + ' — only ' + s.pct(s.bestGate[1]) + ' so egress will be quick.\n' +
+      'Avoid ' + gName(s.worstGate[0]) + ' (' + s.pct(s.worstGate[1]) + ') for 15 min after the final whistle.';
+  }
+  if (/(total|how many|crowd size|attendance|people|capacity)/.test(low)) {
+    return 'Current attendance: ~' + s.totalPeople.toLocaleString() + ' people (' + Math.round(s.avg * 100) + '% of 45,000).\n' +
+      (s.avg > 0.75 ? 'Nearly full — busy evening!' : s.avg > 0.50 ? 'Good crowd, great atmosphere.' : 'Still filling up.');
+  }
+  if (/(all gate|status|overview|summary|report|update)/.test(low)) {
+    return 'Live gate status:\nGate A — ' + s.pct(s.gd.A) + ' (' + s.label(s.gd.A) + ')\n' +
+      'Gate B — ' + s.pct(s.gd.B) + ' (' + s.label(s.gd.B) + ')\n' +
+      'Gate C — ' + s.pct(s.gd.C) + ' (' + s.label(s.gd.C) + ')\n' +
+      'Best: Gate ' + s.bestGate[0] + '  |  Busiest: Gate ' + s.worstGate[0];
+  }
+  if (/(wait|queue|line|how long)/.test(low)) {
+    return 'Estimated queue times:\nGate A — ~' + Math.round(s.gd.A * 18) + ' min\n' +
+      'Gate B — ~' + Math.round(s.gd.B * 18) + ' min\n' +
+      'Gate C — ~' + Math.round(s.gd.C * 18) + ' min\n' +
+      'Head to Gate ' + s.bestGate[0] + ' for the quickest entry.';
+  }
+  if (/(park|parking|car)/.test(low)) {
+    return 'Parking near ' + gName(s.bestGate[0]) + ' will have the easiest flow — least congested.\n' +
+      'Avoid parking near Gate ' + s.worstGate[0] + ' (' + s.label(s.worstGate[1]) + ' crowd there).';
+  }
+  if (/(toilet|bathroom|restroom|loo)/.test(low)) {
+    return 'Toilets near ' + gName(s.bestGate[0]) + ' will have the shortest queues (' + s.pct(s.bestGate[1]) + ' crowd).\n' +
+      'Upper tier facilities tend to be quieter than the concourse mid-match.';
+  }
+  if (/(help|what can|what do|hi|hello|hey)/.test(low)) {
+    return 'Hi! I am your live stadium assistant, powered by Google Gemini.\nI can help with:\n' +
+      '- Best gate to enter (live crowd data)\n- Wait time estimates\n' +
+      '- Food with shortest queues\n- Fastest exit routes\n- Full crowd status overview\nJust ask!';
+  }
+  return null; // no match — send to app.py / Gemini
+}
+
+/* ================================================================
+   CALL app.py /ask — Gemini runs on the server, key stays secret
+================================================================ */
+async function callBackend(question) {
+  var s = getStadiumSnapshot();
+
+  // Send question + live stadium snapshot to app.py
+  var response = await fetch('/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question: question,
+      stadium: {
+        gateA:       Math.round(s.gd.A * 100),
+        gateB:       Math.round(s.gd.B * 100),
+        gateC:       Math.round(s.gd.C * 100),
+        totalPeople: s.totalPeople,
+        bestGate:    s.bestGate[0],
+        worstGate:   s.worstGate[0]
+      }
+    })
+  });
+
+  if (!response.ok) {
+    var err = await response.json();
+    throw new Error(err.error || 'Server error');
+  }
+
+  var data = await response.json();
+  return data.response;
+}
+
+/* ================================================================
+   MAIN ASK HANDLER
+================================================================ */
+async function ask() {
+  var inp = document.getElementById('question');
+  var q   = inp.value.trim();
+  if (!q) return;
+  addMessage(q, 'user');
+  inp.value = '';
+
+  // Try local rule engine first (instant, no server call)
+  var local = localAnswer(q);
+  if (local) {
+    setTimeout(function(){ addMessage(local, 'bot'); }, 280);
+    return;
+  }
+
+  // Fall back to app.py → Gemini
+  var loadingMsg = addMessage('Asking Gemini...', 'bot');
+  try {
+    var reply = await callBackend(q);
+    loadingMsg.querySelector('.bubble').textContent = reply;
+  } catch (err) {
+    loadingMsg.querySelector('.bubble').textContent =
+      'Could not reach the server. Make sure app.py is running (python app.py).';
+  }
+}
+
+function quickAsk(q) {
+  document.getElementById('question').value = q;
+  ask();
+}
+
+/* ================================================================
+   STADIUM DATA & D3 SIMULATION
+================================================================ */
+var W = 620, H = 270;
+var cx = W / 2, cy = H / 2;
+var RX = 285, RY = 118;
+var FRX = 140, FRY = 52;
+
+var zones = [
+  { id: 'A-NW', gate: 'A', a0: Math.PI,         a1: 1.5 * Math.PI, density: 0.85 },
+  { id: 'A-NE', gate: 'A', a0: 1.5 * Math.PI,   a1: 2 * Math.PI,   density: 0.82 },
+  { id: 'B-SE', gate: 'B', a0: 0,               a1: 0.5 * Math.PI, density: 0.50 },
+  { id: 'B-SW', gate: 'B', a0: 0.5 * Math.PI,   a1: Math.PI,       density: 0.55 },
+  { id: 'C-E',  gate: 'C', a0: -0.25,           a1: 0.25,          density: 0.28 },
+  { id: 'C-W',  gate: 'C', a0: Math.PI - 0.25,  a1: Math.PI + 0.25,density: 0.30 },
+];
+
+function densityByGate(gate) {
+  var zs = zones.filter(function(z){ return z.gate === gate; });
+  return zs.reduce(function(s, z){ return s + z.density; }, 0) / zs.length;
+}
+
+function wedgePath(a0, a1, orx, ory, irx, iry) {
+  var steps = 48, pts = [];
+  for (var i = 0; i <= steps; i++) {
+    var a = a0 + (a1 - a0) * (i / steps);
+    pts.push([cx + orx * Math.cos(a), cy + ory * Math.sin(a)]);
+  }
+  for (var i = steps; i >= 0; i--) {
+    var a = a0 + (a1 - a0) * (i / steps);
+    pts.push([cx + irx * Math.cos(a), cy + iry * Math.sin(a)]);
+  }
+  return 'M' + pts.map(function(p){ return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join('L') + 'Z';
+}
+
+function zoneDots(z, count) {
+  var dots = [], maxTries = count * 25, t = 0;
+  var irx = FRX + 26, iry = FRY + 20, orx = RX - 5, ory = RY - 5;
+  while (dots.length < count && t++ < maxTries) {
+    var a = z.a0 + Math.random() * (z.a1 - z.a0);
+    var f = 0.05 + Math.random() * 0.92;
+    var x = cx + (irx + f * (orx - irx)) * Math.cos(a);
+    var y = cy + (iry + f * (ory - iry)) * Math.sin(a);
+    if (Math.pow(x - cx, 2) / Math.pow(orx, 2) + Math.pow(y - cy, 2) / Math.pow(ory, 2) <= 1)
+      dots.push({ x: x, y: y });
+  }
+  return dots;
+}
+
+function buildStadium() {
+  var svgEl = document.getElementById('stadium-svg');
+  svgEl.innerHTML = '';
+  var svg = d3.select(svgEl);
+
+  svg.append('rect').attr('width', W).attr('height', H)
+    .attr('fill', isDark() ? '#0a150a' : '#1c2c1c');
+  svg.append('ellipse').attr('cx', cx).attr('cy', cy).attr('rx', RX).attr('ry', RY)
+    .attr('fill', isDark() ? '#182818' : '#243624')
+    .attr('stroke', isDark() ? '#3a5a3a' : '#4a7a4a').attr('stroke-width', 2);
+
+  var zoneG = svg.append('g').attr('class', 'zone-group');
+  zones.forEach(function(z) {
+    zoneG.append('path')
+      .attr('d', wedgePath(z.a0, z.a1, RX, RY, FRX + 26, FRY + 20))
+      .attr('fill', densityColor(z.density))
+      .attr('fill-opacity', 0.22 + z.density * 0.40)
+      .attr('stroke', densityColor(z.density))
+      .attr('stroke-width', 0.5).attr('stroke-opacity', 0.4)
+      .attr('data-id', z.id);
+  });
+
+  svg.append('ellipse').attr('cx', cx).attr('cy', cy).attr('rx', FRX + 24).attr('ry', FRY + 18)
+    .attr('fill', 'none').attr('stroke', '#bb7733').attr('stroke-width', 6);
+  svg.append('ellipse').attr('cx', cx).attr('cy', cy).attr('rx', FRX).attr('ry', FRY)
+    .attr('fill', '#2d7a2d').attr('stroke', '#fff').attr('stroke-width', 1.5);
+  svg.append('line').attr('x1', cx).attr('y1', cy - FRY + 4).attr('x2', cx).attr('y2', cy + FRY - 4)
+    .attr('stroke', '#fff').attr('stroke-width', 1);
+  svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 18)
+    .attr('fill', 'none').attr('stroke', '#fff').attr('stroke-width', 1);
+  svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', 2.5).attr('fill', '#fff');
+  [cx - FRX * 0.6, cx + FRX * 0.6 - 36].forEach(function(bx) {
+    svg.append('rect').attr('x', bx).attr('y', cy - FRY * 0.5)
+      .attr('width', 36).attr('height', FRY)
+      .attr('fill', 'none').attr('stroke', '#fff').attr('stroke-width', 1);
+  });
+
+  var dotG = svg.append('g').attr('class', 'dot-group');
+  zones.forEach(function(z) {
+    zoneDots(z, Math.round(z.density * 40)).forEach(function(d) {
+      dotG.append('circle')
+        .attr('cx', d.x.toFixed(1)).attr('cy', d.y.toFixed(1))
+        .attr('r', 2.4).attr('fill', densityColor(z.density)).attr('fill-opacity', 0.78);
+    });
+  });
+
+  drawGateLabels(svg);
+}
+
+function drawGateLabels(svg) {
+  var positions = [
+    { id: 'A', x: cx,          y: cy - RY - 13 },
+    { id: 'B', x: cx,          y: cy + RY + 17  },
+    { id: 'C', x: cx + RX + 16, y: cy           },
+  ];
+  var g = svg.append('g').attr('class', 'gate-label-group');
+  positions.forEach(function(p) {
+    var dc = densityByGate(p.id);
+    g.append('rect').attr('x', p.x - 24).attr('y', p.y - 9).attr('width', 48).attr('height', 17).attr('rx', 5)
+      .attr('fill', densityColor(dc)).attr('fill-opacity', 0.88);
+    g.append('text').attr('x', p.x).attr('y', p.y + 4)
+      .attr('text-anchor', 'middle').attr('font-size', 9).attr('font-weight', 'bold').attr('fill', '#fff')
+      .text('Gate ' + p.id);
+  });
+}
+
+function updateZoneVisuals() {
+  var svg = d3.select('#stadium-svg');
+  zones.forEach(function(z) {
+    svg.select('[data-id="' + z.id + '"]')
+      .attr('fill', densityColor(z.density))
+      .attr('fill-opacity', 0.22 + z.density * 0.40);
+  });
+  svg.select('.dot-group').remove();
+  var dotG = svg.append('g').attr('class', 'dot-group');
+  zones.forEach(function(z) {
+    zoneDots(z, Math.round(z.density * 40)).forEach(function(d) {
+      dotG.append('circle')
+        .attr('cx', d.x.toFixed(1)).attr('cy', d.y.toFixed(1))
+        .attr('r', 2.4).attr('fill', densityColor(z.density)).attr('fill-opacity', 0.78);
+    });
+  });
+  svg.select('.gate-label-group').remove();
+  drawGateLabels(svg);
+}
+
+function updateStats() {
+  var gd = { A: densityByGate('A'), B: densityByGate('B'), C: densityByGate('C') };
+  var avg = (gd.A + gd.B + gd.C) / 3;
+  document.getElementById('stat-total').textContent = Math.round(avg * 45000).toLocaleString();
+
+  var entries = Object.entries(gd);
+  var busiest = entries.sort(function(a,b){ return b[1]-a[1]; })[0];
+  var best    = entries.sort(function(a,b){ return a[1]-b[1]; })[0];
+  document.getElementById('stat-busiest').textContent     = 'Gate ' + busiest[0];
+  document.getElementById('stat-busiest-sub').textContent = Math.round(busiest[1] * 100) + '% full';
+  document.getElementById('stat-best').textContent        = 'Gate ' + best[0];
+
+  var zb = document.getElementById('zone-bars');
+  zb.innerHTML = '';
+  ['A', 'B', 'C'].forEach(function(g) {
+    var pct = Math.round(gd[g] * 100), col = densityColor(gd[g]);
+    zb.innerHTML +=
+      '<div class="zone-bar-row">' +
+        '<div class="zone-bar-label"><span>Gate ' + g + '</span><span>' + pct + '%</span></div>' +
+        '<div class="zone-bar-track"><div class="zone-bar-fill" style="width:' + pct + '%;background:' + col + '"></div></div>' +
+      '</div>';
+  });
+
+  ['A', 'B', 'C'].forEach(function(g) {
+    var d = gd[g], pct = Math.round(d * 100), col = densityColor(d);
+    var bar   = document.getElementById('crowd-bar-' + g);
+    var pctEl = document.getElementById('crowd-pct-' + g);
+    if (bar)   { bar.style.width = pct + '%'; bar.style.background = col; }
+    if (pctEl) pctEl.textContent = pct + '%';
+    var badge = document.getElementById('badge-' + g);
+    if (badge) {
+      badge.className = 'badge';
+      if (d > 0.70)      { badge.classList.add('badge-red');    badge.textContent = 'High'; }
+      else if (d > 0.40) { badge.classList.add('badge-yellow'); badge.textContent = 'Medium'; }
+      else               { badge.classList.add('badge-green');  badge.textContent = 'Low'; }
+    }
+  });
+}
+
+/* ================================================================
+   SIMULATION
+================================================================ */
+var targets = { A: 0.85, B: 0.52, C: 0.29 };
+var simInterval = null, simPaused = false, simDelay = 2000;
+
+function simTick() {
+  zones.forEach(function(z) {
+    var noise = (Math.random() - 0.5) * 0.07;
+    z.density = Math.max(0.05, Math.min(0.98, z.density + (targets[z.gate] - z.density) * 0.18 + noise));
+  });
+  targets.A = Math.max(0.35, targets.A - 0.004);
+  targets.B = 0.42 + 0.18 * Math.sin(Date.now() / 7000);
+  targets.C = Math.min(0.85, targets.C + 0.003);
+  updateZoneVisuals();
+  updateStats();
+}
+
+function startSim() {
+  if (simInterval) clearInterval(simInterval);
+  simInterval = setInterval(function(){ if (!simPaused) simTick(); }, simDelay);
+}
+
+function setSpeed(delay, btn) {
+  simDelay = delay;
+  document.querySelectorAll('.sim-btn').forEach(function(b) {
+    if (b.textContent === '1\xD7' || b.textContent === '3\xD7' || b.textContent === '10\xD7')
+      b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  startSim();
+}
+
+function togglePause() {
+  simPaused = !simPaused;
+  var btn = document.getElementById('pause-btn');
+  btn.innerHTML = simPaused ? '&#x25B6; Resume' : '&#x23F8; Pause';
+  btn.classList.toggle('active', !simPaused);
+  document.getElementById('sim-status').textContent = simPaused
+    ? 'Simulation paused'
+    : 'Live crowd density \u2022 updating every 2s';
+}
+
+/* ================================================================
+   EVENT LISTENERS
+================================================================ */
+document.addEventListener('DOMContentLoaded', function () {
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  document.getElementById('qbtn-gate').addEventListener('click', function(){ quickAsk('Which gate is least crowded?'); });
+  document.getElementById('qbtn-food').addEventListener('click', function(){ quickAsk('Where is food with less waiting time?'); });
+  document.getElementById('qbtn-exit').addEventListener('click', function(){ quickAsk('Fastest exit route?'); });
+  document.getElementById('send-btn').addEventListener('click', ask);
+  document.getElementById('question').addEventListener('keydown', function(e){ if (e.key === 'Enter') ask(); });
+
+  var s1  = document.getElementById('speed-1x');
+  var s3  = document.getElementById('speed-3x');
+  var s10 = document.getElementById('speed-10x');
+  s1.addEventListener('click',  function(){ setSpeed(2000, s1);  });
+  s3.addEventListener('click',  function(){ setSpeed(800,  s3);  });
+  s10.addEventListener('click', function(){ setSpeed(300,  s10); });
+  document.getElementById('pause-btn').addEventListener('click', togglePause);
+
+  buildStadium();
+  updateStats();
+  startSim();
+});
+</script>
+</body>
+</html>
